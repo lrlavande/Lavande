@@ -241,8 +241,14 @@
     .kpi-label{font-size:0.74rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
     .kpi-value{font-size:1.2rem;font-weight:800;color:var(--text);letter-spacing:-0.02em;}
 
-    form{display:grid;gap:12px;}
+    form{display:grid;gap:12px;grid-template-columns:minmax(0,1fr);}
+    form > *, .ps-field > *, .modal > input{min-width:0;}
+    input[type=date],input[type=time]{width:100%;box-sizing:border-box;-webkit-min-logical-width:0;}
+    input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and-time-value{text-align:left;min-height:1.2em;}
+    .date-wrap{width:100%;min-width:0;overflow:hidden;border-radius:12px;}
     label{font-size:0.78rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.05em;}
+    input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;min-width:0;max-width:100%;display:block;text-align:left;min-height:46px;}
+    input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and-time-value{text-align:left;margin:0;}
     input,select,textarea{width:100%;border:1.5px solid transparent;border-radius:12px;padding:12px 14px;font-size:0.92rem;font-family:inherit;background:var(--lav-pale);color:var(--text);outline:none;transition:all 0.15s;}
     input:focus,select:focus,textarea:focus{background:#fff;border-color:var(--lav);}
     button{width:100%;border:none;border-radius:12px;padding:13px;font-size:0.9rem;font-family:inherit;font-weight:700;background:var(--lav-dark);color:#fff;cursor:pointer;transition:background 0.15s;letter-spacing:-0.01em;}
@@ -773,7 +779,7 @@
         <div class="card">
           <h3>Ajouter une dépense</h3>
           <form id="expense-form">
-            <label for="date">Date</label><input id="date" type="date" required/>
+            <label for="date">Date</label><div class="date-wrap"><input id="date" type="date" required/></div>
             <select id="week" style="display:none;"></select>
             <label for="category">Catégorie</label><select id="category" required></select>
             <label for="amount">Montant (€)</label><input id="amount" type="number" step="0.01" inputmode="decimal" required/>
@@ -796,7 +802,7 @@
           </div>
           <div style="margin-top:10px;" class="kpi"><div class="kpi-label">&#x27A1; Il te reste</div><div class="kpi-value" id="weekly-left">0,00 €</div></div>
         </div>
-        <div class="card"><h3>Détail par catégorie</h3><div id="weekly-detail" class="budget-list"></div></div>
+        <div class="card"><h3>Mes dépenses de la semaine</h3><div id="weekly-detail" class="expense-list"></div></div>
       </section>
 
       <section id="screen-mois" class="screen">
@@ -1086,7 +1092,7 @@
       <div class="qa-section">Dépenses du mois</div>
       <div class="qa-chips" id="qa-chips-month"></div>
       <input id="qa-memo" type="text" placeholder="Mémo (optionnel)" style="margin-top:16px;"/>
-      <input id="qa-date" type="date" style="margin-top:8px;"/>
+      <div class="date-wrap" style="margin-top:8px;"><input id="qa-date" type="date"/></div>
       <div class="lerr" id="qa-err"></div>
       <button type="button" style="margin-top:14px;" onclick="saveQuickAdd()">Enregistrer</button>
     </div>
@@ -1492,7 +1498,7 @@
     const mkey=d=>{const x=new Date(d.length===10?d+"T12:00:00":d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}`;};
     const mlbl=k=>{const[y,m]=k.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("fr-BE",{month:"long",year:"numeric"});};
     const monthCats=()=>["Épargne",...Object.keys(budgetMB).filter(c=>c!==POCKET&&Number(budgetMB[c])>0)];
-    const getCats=()=>[...new Set([...POCKET_CATS,...monthCats(),...budgetTx.map(t=>t.categorie)])].filter(c=>c!==POCKET||budgetTx.some(t=>t.categorie===POCKET));
+    const getCats=()=>[...new Set([POCKET,...monthCats(),...budgetTx.map(t=>t.categorie)])].filter(c=>!POCKET_CATS.includes(c));
 
     const p2=n=>String(n).padStart(2,"0");
     const mondayOf=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;};
@@ -1605,11 +1611,8 @@
       document.getElementById("weekly-budget").textContent=fmt(w.budget);
       document.getElementById("weekly-spent").textContent=fmt(w.spent);
       const le=document.getElementById("weekly-left");le.textContent=fmt(w.left);le.className="kpi-value "+(w.left>=0?"amount-positive":"amount-negative");
-      document.getElementById("weekly-detail").innerHTML=w.cats.map(({c,spent,tx})=>{
-        const ct=[...tx].sort((a,b)=>new Date(b.date+"T12:00:00")-new Date(a.date+"T12:00:00"));
-        const uid=`wc-${c.replace(/\W/g,"")}`;
-        return `<div class="budget-item" style="cursor:pointer;" onclick="togW('${uid}')"><div class="budget-head"><span>${c}</span><span>${fmt(spent)}</span></div><div class="meta">${ct.length} dépense${ct.length>1?"s":""} · ${w.spent>0?Math.round(spent/w.spent*100):0}% de ta semaine</div><div id="${uid}" style="display:none;margin-top:9px;border-top:1px solid var(--lav-border);padding-top:5px;">${txLines(ct)}</div></div>`;
-      }).join("")||`<div class="empty">Rien dépensé cette semaine, tes ${fmt(w.budget)} sont intacts.</div>`;
+      const wl=[...w.tx].sort((a,b)=>new Date(b.date+"T12:00:00")-new Date(a.date+"T12:00:00"));
+      document.getElementById("weekly-detail").innerHTML=wl.length?txLines(wl.map(t=>({...t,memo:t.memo||(t.categorie!==POCKET?t.categorie:"")}))):`<div class="empty">Rien dépensé cette semaine, tes ${fmt(w.budget)} sont intacts.</div>`;
     }
 
     function rendMonth(){
@@ -1739,7 +1742,7 @@
     window._renderAllBudget=renderAll;
     window._computeWeek=computeWeek;
     window._getCats=getCats;
-    window._weeklyCats=()=>[...POCKET_CATS];
+    window._weeklyCats=()=>[POCKET];
     window._monthCats=monthCats;
     window._addTx=tx=>{budgetTx.push({date:tx.date,semaine:wlbl(tx.date),categorie:tx.categorie,montant:Number(tx.montant),memo:tx.memo||""});saveD();renderAll();updateHubStats();};
   }
@@ -1767,7 +1770,7 @@
       fill.style.width=(w.budget>0?Math.min(100,w.spent/w.budget*100):0)+"%";
       fill.classList.toggle("over",w.left<0);
       const wc=document.getElementById("wh-cats");
-      wc.style.display=w.cats.length?"grid":"none";
+      wc.style.display="none";
       wc.innerHTML=w.cats.slice(0,6).map(x=>`<div class="week-cat"><div class="week-cat-name">${x.c}</div><div class="week-cat-val">${fmt(x.spent)}</div></div>`).join("");
     }
 
@@ -1842,6 +1845,7 @@
     const cats=window._getCats?window._getCats():[];
     const n=normTxt(q);
     if(!n) return null;
+    if(["poche","argent","plaisir","sortie","sorties","uber","resto","shopping","taff","potes","cadeau"].some(x=>n.includes(x))||POCKET_CATS.some(c=>normTxt(c).includes(n))) return POCKET;
     return cats.find(c=>normTxt(c)===n)||cats.find(c=>normTxt(c).includes(n))||cats.find(c=>n.includes(normTxt(c)))||null;
   }
   function handleUrlParams(){
@@ -2882,8 +2886,8 @@ Pour "prochains_rdv" : si elle mentionne une prochaine séance ou un rendez-vous
     function openAddSession(iso,existing){
       const s=existing||{};
       openSheet(`<h2>${existing?'Préparer la séance':'Planifier une séance'}</h2>
-        <div class="ps-field"><label>Date</label><input type="date" id="ps-f-date" value="${s.date||iso||todayISO()}"></div>
-        <div class="ps-field"><label>Heure (optionnel)</label><input type="time" id="ps-f-time" value="${s.time||''}"></div>
+        <div class="ps-field"><label>Date</label><div class="date-wrap"><input type="date" id="ps-f-date" value="${s.date||iso||todayISO()}"></div></div>
+        <div class="ps-field"><label>Heure (optionnel)</label><div class="date-wrap"><input type="time" id="ps-f-time" value="${s.time||''}"></div></div>
         <div class="ps-field"><label>Intitulé</label><input type="text" id="ps-f-title" placeholder="Séance psy" value="${esc(s.title||'')}"></div>
         <div class="ps-field"><label>Choses à aborder / notes de préparation</label><textarea id="ps-f-notes" placeholder="Ce que je veux dire, mes questions…">${esc(s.rawNotes||'')}</textarea></div>
         <button type="button" class="ps-btn" onclick="psSaveSession('${existing?existing.id:''}')">Enregistrer</button>`);
