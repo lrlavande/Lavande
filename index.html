@@ -409,16 +409,19 @@
     .geo-btn-deny:hover{background:var(--lav-border);}
     .geo-popup-footer{font-family:var(--px);font-size:5px;color:var(--muted);text-align:center;padding:0 18px 14px;letter-spacing:1px;line-height:2;}
 
-    #app.visible{animation:appFadeIn 0.45s ease forwards;}
-    @keyframes appFadeIn{from{opacity:0;transform:scale(.98) translateY(6px);}to{opacity:1;transform:scale(1) translateY(0);}}
+    #app.visible{animation:appFadeIn 0.45s ease;}
+    @keyframes appFadeIn{from{opacity:0;}to{opacity:1;}}
+    body:has(.modal-backdrop.open), body:has(.drawer-backdrop.open), body:has(.recap-backdrop.open), body:has(.ps-overlay.show), body:has(.geo-backdrop.open), body:has(.budget-chooser-backdrop.open){overflow:hidden;}
+    .modal, .drawer, .budget-chooser, .ps-sheet{overscroll-behavior:contain;}
+    .recap-popup{overscroll-behavior:contain;}
     #login-screen.fade-out{animation:loginFadeOut 0.28s ease forwards;}
     @keyframes loginFadeOut{from{opacity:1;}to{opacity:0;transform:scale(1.02);}}
     .page{animation:none;opacity:1;}
     .page.page-enter{animation:pageIn 0.24s ease forwards;}
     .page.page-exit{animation:pageOut 0.18s ease forwards;}
-    @keyframes pageIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes pageIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
     @keyframes pageOut{from{opacity:1;}to{opacity:0;transform:translateY(-4px);}}
-    @keyframes screenIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes screenIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
 
     @media(max-width:380px){.kpi-grid{grid-template-columns:1fr;}.setting-row{grid-template-columns:1fr;}}
 
