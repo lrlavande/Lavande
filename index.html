@@ -810,8 +810,8 @@
 
         <div class="card" onclick="event.stopPropagation()">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
-            <div style="font-size:0.95rem;font-weight:800;color:var(--text);">Mes paies</div>
-            <button type="button" style="width:auto;padding:9px 12px;font-size:0.82rem;" onclick="openPayModal()">💰 J'ai reçu ma paie</button>
+            <div style="font-size:0.95rem;font-weight:800;color:var(--text);">Mes rentrées</div>
+            <button type="button" style="width:auto;padding:9px 12px;font-size:0.82rem;" onclick="openPayModal()">＋ Une rentrée</button>
           </div>
           <div id="pay-list" style="margin-bottom:14px;"></div>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
@@ -1085,14 +1085,28 @@
 
   <div id="pay-backdrop" class="modal-backdrop" onclick="if(event.target===this)closePayModal()">
     <div class="modal">
-      <div class="modal-head"><h3>💰 J'ai reçu ma paie</h3><button class="secondary" type="button" style="width:auto;padding:9px 13px;" onclick="closePayModal()">Fermer</button></div>
-      <div class="meta" style="margin-bottom:12px;">Ton budget du mois commence ce jour-là et dure jusqu'à ta prochaine paie.</div>
+      <div class="modal-head"><h3 id="pay-title">💰 Une rentrée</h3><button class="secondary" type="button" style="width:auto;padding:9px 13px;" onclick="closePayModal()">Fermer</button></div>
+      <div class="login-tabs" style="margin-bottom:12px;">
+        <button type="button" class="ltab active" data-pt="main" onclick="setPayType('main')">Paie</button>
+        <button type="button" class="ltab" data-pt="extra" onclick="setPayType('extra')">Extra</button>
+        <button type="button" class="ltab" data-pt="refund" onclick="setPayType('refund')">Rembours.</button>
+      </div>
+      <div class="meta" id="pay-help" style="margin-bottom:12px;"></div>
       <label for="pay-amount">Montant reçu</label>
-      <input id="pay-amount" class="qa-amount" type="text" inputmode="decimal" placeholder="2 450 €" autocomplete="off" style="margin-top:6px;"/>
-      <label for="pay-date" style="display:block;margin-top:12px;">Date de la paie</label>
+      <input id="pay-amount" class="qa-amount" type="text" inputmode="decimal" placeholder="0,00 €" autocomplete="off" style="margin-top:6px;"/>
+      <div id="pay-extra-box" style="display:none;margin-top:12px;">
+        <label for="pay-label">C'est quoi ?</label>
+        <input id="pay-label" type="text" placeholder="13e mois, prime, pécule..." style="margin-top:6px;"/>
+      </div>
+      <div id="pay-refund-box" style="display:none;margin-top:12px;">
+        <label>Ça rembourse quelle dépense ?</label>
+        <div class="qa-chips" id="pay-refund-cats" style="margin-top:6px;"></div>
+        <input id="pay-refund-memo" type="text" placeholder="De qui / quoi ? (Zalando, Sarah...)" style="margin-top:10px;"/>
+      </div>
+      <label for="pay-date" style="display:block;margin-top:12px;">Date</label>
       <div class="date-wrap" style="margin-top:6px;"><input id="pay-date" type="date"/></div>
       <div class="lerr" id="pay-err"></div>
-      <button type="button" style="margin-top:14px;" onclick="savePayModal()">Enregistrer ma paie</button>
+      <button type="button" style="margin-top:14px;" onclick="savePayModal()">Enregistrer</button>
     </div>
   </div>
 
@@ -1105,7 +1119,7 @@
       <div class="qa-section">Dépenses du mois</div>
       <div class="qa-chips" id="qa-chips-month"></div>
       <div class="qa-section">Rentrée</div>
-      <div class="qa-chips"><button type="button" class="qa-chip" data-cat="__PAIE__" onclick="pickQaCat(this)">💰 Ma paie</button></div>
+      <div class="qa-chips"><button type="button" class="qa-chip" data-cat="__PAIE__" onclick="pickQaCat(this)">💰 Ma paie</button><button type="button" class="qa-chip" onclick="qaToPay('extra')">🎁 Extra</button><button type="button" class="qa-chip" onclick="qaToPay('refund')">↩️ Remboursement</button></div>
       <input id="qa-memo" type="text" placeholder="Mémo (optionnel)" style="margin-top:16px;"/>
       <div class="date-wrap" style="margin-top:8px;"><input id="qa-date" type="date"/></div>
       <div class="lerr" id="qa-err"></div>
@@ -1318,7 +1332,10 @@
   const isoAddDays=(iso,n)=>{const[y,m,d]=iso.split("-").map(Number);return isoOf(new Date(y,m-1,d+n));};
   const isoAddMonths=(iso,n)=>{const[y,m,d]=iso.split("-").map(Number);const last=new Date(y,m-1+n+1,0).getDate();return isoOf(new Date(y,m-1+n,Math.min(d,last)));};
   const budgetMonthOf=iso=>isoAddDays(iso,10).slice(0,7);
-  function getPaydays(){try{return (JSON.parse(localStorage.getItem(PAY_KEY)||"[]")).filter(p=>p&&/^\d{4}-\d{2}-\d{2}$/.test(p.date)).sort((a,b)=>a.date<b.date?-1:(a.date>b.date?1:0));}catch(e){return [];}}
+  function getAllPay(){try{const l=(JSON.parse(localStorage.getItem(PAY_KEY)||"[]")).filter(p=>p&&/^\d{4}-\d{2}-\d{2}$/.test(p.date));let ch=false;l.forEach((p,i)=>{if(!p.id){p.id="p"+Date.now().toString(36)+i;ch=true;}if(!p.type){p.type="main";ch=true;}});if(ch)localStorage.setItem(PAY_KEY,JSON.stringify(l));return l.sort((a,b)=>a.date<b.date?-1:(a.date>b.date?1:0));}catch(e){return [];}}
+  function getPaydays(){return getAllPay().filter(p=>p.type==="main");}
+  function getExtras(){return getAllPay().filter(p=>p.type==="extra");}
+  function extrasFor(key){return getExtras().filter(p=>periodKey(p.date)===key);}
   function savePaydays(l){try{localStorage.setItem(PAY_KEY,JSON.stringify(l));}catch(e){}}
   function fallbackSalary(){const s=Number(localStorage.getItem("flw-salaire")||0);return s>0?s:DEFAULT_SALAIRE;}
   function periodStartFor(iso){
@@ -1333,6 +1350,15 @@
   }
   function periodKey(iso){const ps=periodStartFor(iso);return ps?budgetMonthOf(ps.start):iso.slice(0,7);}
   function periodInfo(key){
+    const base=periodInfoBase(key);
+    const ex=extrasFor(key);
+    base.extras=ex.reduce((s,p)=>s+(Number(p.amount)||0),0);
+    base.extraList=ex;
+    base.mainAmount=base.amount;
+    base.amount=base.amount+base.extras;
+    return base;
+  }
+  function periodInfoBase(key){
     const pd=getPaydays();
     const real=[...pd].reverse().find(p=>budgetMonthOf(p.date)===key);
     if(real){const ps=periodStartFor(real.date);return {key,start:real.date,end:ps.end,amount:Number(real.amount)||fallbackSalary(),real:true};}
@@ -1346,6 +1372,7 @@
     if(first) end=isoAddDays(first.date,-1);
     return {key,start,end,amount:fallbackSalary(),real:false,calendar:true};
   }
+  const deM=m=>(/^[aeiouyéèh]/i.test(m)?"d'":"de ")+m;
   const shortDate=iso=>{const[y,m,d]=iso.split("-");return `${d}/${m}`;};
   const DEFAULT_WB={"Argent de poche":80};
   const DEFAULT_MB={"Dettes":150,"Compte commun":120,"Courses":150,"Transport":300,"Abonnements & salle":95,"Santé":80,"Chats":65,"Beauté / hygiène":155,"Argent de poche":345,"Imprévus":55};
@@ -1627,7 +1654,7 @@
         const editId=`edit-${i}`;
         const catOpts=getCats().map(c=>`<option value="${c}"${c===e.categorie?" selected":""}>${c}</option>`).join("");
         return `<div class="expense-item">
-          <div class="expense-head"><span>${e.categorie}</span><span>${fmt(e.montant)}</span></div>
+          <div class="expense-head"><span>${e.categorie}</span><span style="${Number(e.montant)<0?"color:var(--success);":""}">${Number(e.montant)<0?"+"+fmt(-e.montant)+" ↩️":fmt(e.montant)}</span></div>
           <div class="meta">Date : ${fd(e.date)} · Mémo : ${e.memo||"-"}</div>
           <div style="display:flex;gap:6px;margin-top:9px;">
             <button class="secondary" style="flex:1;font-size:0.8rem;padding:9px;" onclick="toggleEdit(${i})">Modifier</button>
@@ -1669,7 +1696,7 @@
     window.togM=uid=>{const el=document.getElementById(uid);if(el)el.style.display=el.style.display==="none"?"block":"none";};
     window.delTx=idx=>{const t=sortedTx()[idx];const ri=findReal(t);if(ri!==-1){budgetTx.splice(ri,1);saveD();renderAll();updateHubStats();}};
 
-    const txLines=ct=>ct.length?ct.map(t=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--lav-border);"><div><div style="font-size:0.86rem;font-weight:600;">${fd(t.date)}</div><div style="font-size:0.8rem;color:var(--muted);">${t.memo||"\u2014"}</div></div><span style="font-size:0.92rem;font-weight:700;color:var(--danger);">${fmt(t.montant)}</span></div>`).join(""):"";
+    const txLines=ct=>ct.length?ct.map(t=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--lav-border);"><div><div style="font-size:0.86rem;font-weight:600;">${fd(t.date)}</div><div style="font-size:0.8rem;color:var(--muted);">${t.memo||"\u2014"}</div></div><span style="font-size:0.92rem;font-weight:700;color:${Number(t.montant)<0?"var(--success)":"var(--danger)"};">${Number(t.montant)<0?"+"+fmt(-t.montant):fmt(t.montant)}</span></div>`).join(""):"";
 
     function rendWeek(){
       const w=computeWeek(wS.value||curW());
@@ -1690,7 +1717,7 @@
       const budgetDispo=monthlyLimit(sel);
       const pi=periodInfo(sel);
       const pe=document.getElementById("month-period");
-      if(pe) pe.textContent=`Du ${shortDate(pi.start)} au ${shortDate(pi.end)}${pi.real?` · paie de ${fmt(pi.amount)}`:(pi.estimated?` · paie estimée à ${fmt(pi.amount)}, encode-la quand elle tombe`:(getPaydays().length?` · avant ta première paie encodée`:` · mois calendrier, encode ta paie pour démarrer de paie en paie`))}`;
+      if(pe) pe.textContent=`Du ${shortDate(pi.start)} au ${shortDate(pi.end)}${pi.extras?` · dont ${fmt(pi.extras)} d'extras`:""}${pi.real?` · paie de ${fmt(pi.mainAmount)}`:(pi.estimated?` · paie estimée à ${fmt(pi.amount)}, encode-la quand elle tombe`:(getPaydays().length?` · avant ta première paie encodée`:` · mois calendrier, encode ta paie pour démarrer de paie en paie`))}`;
       renderPayList();
       const reste=budgetDispo-total;
       const pct=budgetDispo>0?Math.min(100,(total/budgetDispo)*100):0;
@@ -1772,17 +1799,19 @@
 
     function renderPayList(){
       const el=document.getElementById("pay-list");if(!el)return;
-      const pd=getPaydays().reverse();
-      el.innerHTML=pd.length?pd.slice(0,6).map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);"><div><div style="font-size:0.86rem;font-weight:700;color:var(--text);">Paie du ${fd(p.date)}</div><div style="font-size:0.76rem;color:var(--muted);">budget de ${mlbl(budgetMonthOf(p.date))}</div></div><div style="display:flex;align-items:center;gap:8px;"><span style="font-weight:800;color:var(--success);">${fmt(p.amount)}</span><button type="button" class="secondary" style="width:auto;padding:4px 9px;font-size:0.8rem;" onclick="delPayday('${p.date}')">✕</button></div></div>`).join(""):`<div class="meta" style="padding:6px 0;">Pas encore de paie encodée. Ton budget suit le mois calendrier en attendant.</div>`;
+      const pd=getAllPay().reverse();
+      el.innerHTML=pd.length?pd.slice(0,8).map(p=>{const ex=p.type==="extra";const t=ex?`🎁 ${p.label||"Extra"} du ${fd(p.date)}`:`💰 Paie du ${fd(p.date)}`;const sub=ex?`ajouté au budget ${deM(mlbl(periodKey(p.date)))}`:`ouvre le budget ${deM(mlbl(budgetMonthOf(p.date)))}`;return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);"><div><div style="font-size:0.86rem;font-weight:700;color:var(--text);">${t}</div><div style="font-size:0.76rem;color:var(--muted);">${sub}</div></div><div style="display:flex;align-items:center;gap:8px;"><span style="font-weight:800;color:var(--success);">${fmt(p.amount)}</span><button type="button" class="secondary" style="width:auto;padding:4px 9px;font-size:0.8rem;" onclick="delPayday('${p.id}')">✕</button></div></div>`;}).join(""):`<div class="meta" style="padding:6px 0;">Pas encore de paie encodée. Ton budget suit le mois calendrier en attendant.</div>`;
     }
-    window.addPayday=(date,amount)=>{
-      const l=getPaydays().filter(p=>p.date!==date);
-      l.push({date,amount:Number(amount)||0});savePaydays(l);
+    window.addPayday=(date,amount,type,label)=>{
+      type=type||"main";
+      let l=getAllPay();
+      if(type==="main") l=l.filter(p=>!(p.type==="main"&&p.date===date));
+      l.push({id:"p"+Date.now().toString(36),date,amount:Number(amount)||0,type,label:label||""});savePaydays(l);
       fillMonthSelect(periodKey(localISO()));renderAll();updateHubStats();if(typeof renderCalendar==="function")renderCalendar();
     };
-    window.delPayday=date=>{
-      if(!confirm("Supprimer cette paie ?"))return;
-      savePaydays(getPaydays().filter(p=>p.date!==date));
+    window.delPayday=id=>{
+      if(!confirm("Supprimer cette rentrée ?"))return;
+      savePaydays(getAllPay().filter(p=>p.id!==id));
       fillMonthSelect(periodKey(localISO()));renderAll();updateHubStats();
     };
 
@@ -1916,11 +1945,43 @@
     setTimeout(()=>{const a=document.getElementById("qa-amount");if(!a.value)a.focus();},250);
   }
   function closeQuickAdd(){document.getElementById("qa-backdrop").classList.remove("open");}
-  function openPayModal(){
-    const pd=getPaydays();const last=pd.length?pd[pd.length-1].amount:fallbackSalary();
-    document.getElementById("pay-amount").value=String(last).replace(".",",");
+  function qaToPay(t){
+    const raw=document.getElementById("qa-amount").value;
+    const a=parseFloat(String(raw).replace(/\s/g,"").replace(",",".").replace(/[^\d.]/g,""));
+    closeQuickAdd();openPayModal(t,a>0?a:null);
+  }
+  let payType="main", refundCat=null;
+  const PAY_HELP={
+    main:"Ta paie habituelle : elle ouvre ton budget du mois jusqu'à la prochaine paie.",
+    extra:"13e mois, prime, pécule... ça s'ajoute au budget en cours sans en ouvrir un nouveau.",
+    refund:"Un magasin ou un pote te rembourse : ça annule la dépense dans sa catégorie (et ça revient dans ta semaine si c'était de l'argent de poche)."
+  };
+  function setPayType(t){
+    payType=t;
+    document.querySelectorAll('#pay-backdrop .ltab').forEach(b=>b.classList.toggle('active',b.dataset.pt===t));
+    document.getElementById("pay-help").textContent=PAY_HELP[t];
+    document.getElementById("pay-extra-box").style.display=t==="extra"?"block":"none";
+    document.getElementById("pay-refund-box").style.display=t==="refund"?"block":"none";
+    if(t==="main"){const pd=getPaydays();document.getElementById("pay-amount").value=String(pd.length?pd[pd.length-1].amount:fallbackSalary()).replace(".",",");}
+    else if(document.getElementById("pay-amount").dataset.keep!=="1") document.getElementById("pay-amount").value="";
+    if(t==="refund"){
+      const cats=window._getCats?window._getCats().filter(c=>c!=="Épargne"):[];
+      if(!refundCat||!cats.includes(refundCat)) refundCat=null;
+      document.getElementById("pay-refund-cats").innerHTML=cats.map(c=>`<button type="button" class="qa-chip${c===refundCat?" sel":""}" data-rc="${escAttr(c)}" onclick="pickRefundCat(this)">${escAttr(c===POCKET?"Autre (poche)":c)}</button>`).join("");
+    }
+  }
+  function pickRefundCat(el){refundCat=el.dataset.rc;document.querySelectorAll('#pay-refund-cats .qa-chip').forEach(b=>b.classList.toggle('sel',b.dataset.rc===refundCat));}
+  function openPayModal(type,amount){
+    const a=document.getElementById("pay-amount");
+    a.dataset.keep=amount?"1":"";
+    document.getElementById("pay-label").value="";
+    document.getElementById("pay-refund-memo").value="";
     document.getElementById("pay-date").value=localISO();
     document.getElementById("pay-err").classList.remove("show");
+    refundCat=null;
+    setPayType(type||"main");
+    if(amount) a.value=String(amount).replace(".",",");
+    a.dataset.keep="";
     document.getElementById("pay-backdrop").classList.add("open");
   }
   function closePayModal(){document.getElementById("pay-backdrop").classList.remove("open");}
@@ -1930,7 +1991,22 @@
     const err=document.getElementById("pay-err");
     if(!(a>0)){err.textContent="Indique le montant !";err.classList.add("show");return;}
     if(!d){err.textContent="Indique la date !";err.classList.add("show");return;}
-    window.addPayday(d,a);closePayModal();
+    const fmt=window._budgetFmt;
+    if(payType==="refund"){
+      if(!refundCat){err.textContent="Choisis la catégorie remboursée !";err.classList.add("show");return;}
+      const who=document.getElementById("pay-refund-memo").value.trim();
+      window._addTx({date:d,categorie:refundCat,montant:-a,memo:"Remboursement"+(who?" · "+who:"")});
+      closePayModal();
+      let msg=`Remboursement de ${fmt(a)} sur ${refundCat===POCKET?"ton argent de poche":refundCat}`;
+      if(isPocket(refundCat)){const w=window._computeWeek();msg+=` · il te reste ${fmt(w.left)} cette semaine`;}
+      showToast(msg+" ↩️");return;
+    }
+    if(payType==="extra"){
+      const lb=document.getElementById("pay-label").value.trim()||"Extra";
+      window.addPayday(d,a,"extra",lb);closePayModal();
+      showToast(`${lb} de ${fmt(a)} ajouté à ton budget ${deM(new Date(periodKey(d)+"-01T12:00:00").toLocaleDateString("fr-BE",{month:"long"}))} 🎁`);return;
+    }
+    window.addPayday(d,a,"main");closePayModal();
     showToast(`Paie encodée · nouveau budget à partir du ${shortDate(d)} 💰`);
   }
   function saveQuickAdd(){
@@ -1941,7 +2017,7 @@
     if(qaCat==="__PAIE__"){
       const d=document.getElementById("qa-date").value||localISO();
       window.addPayday(d,a);closeQuickAdd();
-      showToast(`Paie de ${window._budgetFmt(a)} encodée · ton budget de ${new Date(budgetMonthOf(d)+"-01T12:00:00").toLocaleDateString("fr-BE",{month:"long"})} démarre le ${shortDate(d)} 💰`);
+      showToast(`Paie de ${window._budgetFmt(a)} encodée · ton budget ${deM(new Date(budgetMonthOf(d)+"-01T12:00:00").toLocaleDateString("fr-BE",{month:"long"}))} démarre le ${shortDate(d)} 💰`);
       return;
     }
     window._addTx({date:document.getElementById("qa-date").value||localISO(),categorie:qaCat,montant:a,memo:document.getElementById("qa-memo").value.trim()});
@@ -2497,7 +2573,7 @@
       document.getElementById("recap-total").style.display="none";
     } else {
       depEl.innerHTML = txDay.map(t =>
-        `<div class="recap-row"><span>${t.categorie}${t.memo?" · <em style='color:var(--muted);font-size:0.76rem;'>"+t.memo+"</em>":""}</span><span class="recap-amount">${fmt(t.montant)}</span></div>`
+        `<div class="recap-row"><span>${t.categorie}${t.memo?" · <em style='color:var(--muted);font-size:0.76rem;'>"+t.memo+"</em>":""}</span><span class="recap-amount"${Number(t.montant)<0?' style="color:var(--success)"':""}>${Number(t.montant)<0?"+"+fmt(-t.montant):fmt(t.montant)}</span></div>`
       ).join("");
       const total = txDay.reduce((s,t)=>s+Number(t.montant),0);
       document.getElementById("recap-total").style.display="flex";
@@ -2695,7 +2771,7 @@
     const COLORS=["#a88bd0","#d9a860","#c95d74","#4a9b74","#6ba3d4","#e8a0b8","#9b72c0","#f5c842","#5ab884","#7b5b96"];
     const catMap={};
     txMonth.forEach(t=>{catMap[t.categorie]=(catMap[t.categorie]||0)+Number(t.montant);});
-    const cats=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+    const cats=Object.entries(catMap).filter(c=>c[1]>0).sort((a,b)=>b[1]-a[1]);
     drawDonut("donut-cat","donut-legend",
       cats.map((c,i)=>({label:c[0],val:c[1],color:COLORS[i%COLORS.length]})),
       v=>fmt(v).replace(",00","")
