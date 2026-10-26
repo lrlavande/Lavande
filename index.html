@@ -797,7 +797,7 @@
         <div class="card"><label for="week-select">Semaine sélectionnée</label><select id="week-select"></select></div>
         <div class="card">
           <div class="kpi-grid">
-            <div class="kpi"><div class="kpi-label">Budget semaine</div><div class="kpi-value" id="weekly-budget">0,00 €</div></div>
+            <div class="kpi"><div class="kpi-label">Dispo cette semaine</div><div class="kpi-value" id="weekly-budget">0,00 €</div><div class="meta" id="weekly-carry" style="margin-top:4px;line-height:1.35;"></div></div>
             <div class="kpi"><div class="kpi-label">Dépensé</div><div class="kpi-value" id="weekly-spent">0,00 €</div></div>
           </div>
           <div style="margin-top:10px;" class="kpi"><div class="kpi-label">&#x27A1; Il te reste</div><div class="kpi-value" id="weekly-left">0,00 €</div></div>
@@ -806,18 +806,14 @@
       </section>
 
       <section id="screen-mois" class="screen">
-        <div class="card"><label for="month-select">Mois analysé</label><select id="month-select"></select></div>
+        <div class="card"><label for="month-select">Budget analysé</label><select id="month-select"></select><div class="meta" id="month-period" style="margin-top:8px;"></div></div>
 
         <div class="card" onclick="event.stopPropagation()">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
-            <div style="font-size:0.82rem;font-weight:700;color:var(--text);">Salaire du mois</div>
-            <div style="display:inline-flex;align-items:center;gap:5px;background:var(--lav-pale);border:1px solid var(--lav-border);border-radius:var(--r-md);padding:6px 10px;">
-              <input type="number" min="0" step="10" id="salaire-input" inputmode="numeric"
-                style="border:0;background:transparent;outline:none;font-size:0.95rem;font-weight:700;color:var(--text);width:90px;text-align:right;font-family:inherit;padding:0;"
-                placeholder="0" oninput="saveSalaire(this.value)"/>
-              <span style="font-size:0.88rem;color:var(--muted);font-weight:700;">€</span>
-            </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
+            <div style="font-size:0.95rem;font-weight:800;color:var(--text);">Mes paies</div>
+            <button type="button" style="width:auto;padding:9px 12px;font-size:0.82rem;" onclick="openPayModal()">💰 J'ai reçu ma paie</button>
           </div>
+          <div id="pay-list" style="margin-bottom:14px;"></div>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
             <div>
               <div style="font-size:0.82rem;font-weight:700;color:var(--text);">Charges fixes</div>
@@ -1075,11 +1071,28 @@
   <div id="settings-backdrop" class="modal-backdrop">
     <div class="modal">
       <div class="modal-head"><h3>Paramètres budget</h3><button id="close-settings" class="secondary" style="width:auto;padding:9px 13px;">Fermer</button></div>
-      <div class="card" style="margin-bottom:10px;box-shadow:none;"><h3 style="margin-bottom:8px;">Budgets par semaine</h3><div id="weekly-budget-settings" class="settings-grid"></div><div class="budget-total-banner"><div class="banner-left"><div class="banner-label">Total / semaine</div></div><div class="banner-value" id="weekly-total-value">0,00 €</div></div></div>
+      <div class="card" style="margin-bottom:10px;box-shadow:none;"><h3 style="margin-bottom:8px;">Argent de poche</h3><div id="weekly-budget-settings" class="settings-grid"></div><div class="budget-total-banner"><div class="banner-left"><div class="banner-label">Total / semaine</div></div><div class="banner-value" id="weekly-total-value">0,00 €</div></div>
+        <label for="pocket-cats-input" style="display:block;margin-top:14px;">Mes catégories d'argent de poche</label>
+        <textarea id="pocket-cats-input" rows="3" style="margin-top:6px;resize:vertical;" placeholder="Soirée, Shopping, Plaisir..."></textarea>
+        <div class="meta" style="margin-top:4px;">Sépare-les par des virgules. Pas de budget par catégorie, juste pour savoir où ça part.</div>
+        <button type="button" class="secondary" id="reset-pocket-week" style="margin-top:10px;font-size:0.82rem;padding:10px;">Remettre le report à zéro à partir de cette semaine</button></div>
       <div class="card" style="margin-bottom:10px;box-shadow:none;"><h3 style="margin-bottom:8px;">Budgets par mois</h3><div id="monthly-budget-settings" class="settings-grid"></div><div class="budget-total-banner"><div class="banner-left"><div class="banner-label">Total / mois</div><div class="banner-sub" id="monthly-sub">—</div><div class="mini-progress"><div class="mini-bar" id="monthly-mini-bar"></div></div></div><div class="banner-value" id="monthly-total-value">0,00 €</div></div></div>
       <div class="card" style="margin-bottom:10px;box-shadow:none;"><h3 style="margin-bottom:8px;">Importer un CSV</h3><p style="font-size:0.85rem;color:var(--muted);margin:0 0 8px;">Les doublons sont ignorés automatiquement.</p><input type="file" id="import-file" accept=".csv" style="background:var(--lav-soft);padding:11px;font-size:0.88rem;border-radius:10px;border:1px solid var(--lav-border);"/><div class="toolbar"><button id="import-btn" type="button">Importer</button><button id="import-replace-btn" type="button" class="secondary">Remplacer tout</button></div><div id="import-feedback" class="import-feedback"></div></div>
       <div class="card" style="margin-bottom:10px;box-shadow:none;"><h3 style="margin-bottom:8px;">Exporter en CSV</h3><label for="export-date">Filtrer par date</label><input id="export-date" type="date"/><div class="toolbar"><button id="export-date-btn" type="button">Exporter la date</button><button id="export-all-btn" type="button" class="secondary">Exporter tout</button><button id="reset-budgets" type="button" class="secondary">Réinitialiser</button></div></div>
       <button id="save-settings" type="button">Enregistrer les paramètres</button>
+    </div>
+  </div>
+
+  <div id="pay-backdrop" class="modal-backdrop" onclick="if(event.target===this)closePayModal()">
+    <div class="modal">
+      <div class="modal-head"><h3>💰 J'ai reçu ma paie</h3><button class="secondary" type="button" style="width:auto;padding:9px 13px;" onclick="closePayModal()">Fermer</button></div>
+      <div class="meta" style="margin-bottom:12px;">Ton budget du mois commence ce jour-là et dure jusqu'à ta prochaine paie.</div>
+      <label for="pay-amount">Montant reçu</label>
+      <input id="pay-amount" class="qa-amount" type="text" inputmode="decimal" placeholder="2 450 €" autocomplete="off" style="margin-top:6px;"/>
+      <label for="pay-date" style="display:block;margin-top:12px;">Date de la paie</label>
+      <div class="date-wrap" style="margin-top:6px;"><input id="pay-date" type="date"/></div>
+      <div class="lerr" id="pay-err"></div>
+      <button type="button" style="margin-top:14px;" onclick="savePayModal()">Enregistrer ma paie</button>
     </div>
   </div>
 
@@ -1091,6 +1104,8 @@
       <div class="qa-chips" id="qa-chips-week"></div>
       <div class="qa-section">Dépenses du mois</div>
       <div class="qa-chips" id="qa-chips-month"></div>
+      <div class="qa-section">Rentrée</div>
+      <div class="qa-chips"><button type="button" class="qa-chip" data-cat="__PAIE__" onclick="pickQaCat(this)">💰 Ma paie</button></div>
       <input id="qa-memo" type="text" placeholder="Mémo (optionnel)" style="margin-top:16px;"/>
       <div class="date-wrap" style="margin-top:8px;"><input id="qa-date" type="date"/></div>
       <div class="lerr" id="qa-err"></div>
@@ -1294,7 +1309,44 @@
   const DEFAULT_SALAIRE=2450, DEFAULT_CHARGES=782;
   const POCKET="Argent de poche";
   const POCKET_CATS=["Bouffe au taff","UberEats / Resto","Shopping","Sorties","Potes / cadeaux"];
-  const isPocket=c=>c===POCKET||POCKET_CATS.includes(c);
+  const PAY_KEY="flw-paydays", PCATS_KEY="flw-pocket-cats", PSTART_KEY="flw-pocket-start";
+  const DEFAULT_PCATS=["Soirée","Shopping","Plaisir","Bouffe au taff","Clopes","Uber Eats / resto","Potes / cadeaux"];
+  function pocketCats(){try{const v=JSON.parse(localStorage.getItem(PCATS_KEY)||"null");if(Array.isArray(v)&&v.length)return v;}catch(e){}return [...DEFAULT_PCATS];}
+  const isPocket=c=>c===POCKET||pocketCats().includes(c)||POCKET_CATS.includes(c);
+  const pad2=n=>String(n).padStart(2,"0");
+  const isoOf=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  const isoAddDays=(iso,n)=>{const[y,m,d]=iso.split("-").map(Number);return isoOf(new Date(y,m-1,d+n));};
+  const isoAddMonths=(iso,n)=>{const[y,m,d]=iso.split("-").map(Number);const last=new Date(y,m-1+n+1,0).getDate();return isoOf(new Date(y,m-1+n,Math.min(d,last)));};
+  const budgetMonthOf=iso=>isoAddDays(iso,10).slice(0,7);
+  function getPaydays(){try{return (JSON.parse(localStorage.getItem(PAY_KEY)||"[]")).filter(p=>p&&/^\d{4}-\d{2}-\d{2}$/.test(p.date)).sort((a,b)=>a.date<b.date?-1:(a.date>b.date?1:0));}catch(e){return [];}}
+  function savePaydays(l){try{localStorage.setItem(PAY_KEY,JSON.stringify(l));}catch(e){}}
+  function fallbackSalary(){const s=Number(localStorage.getItem("flw-salaire")||0);return s>0?s:DEFAULT_SALAIRE;}
+  function periodStartFor(iso){
+    const pd=getPaydays();let last=null;
+    for(const p of pd){if(p.date<=iso)last=p;else break;}
+    if(!last) return null;
+    const next=pd.find(p=>p.date>last.date);
+    if(next) return {start:last.date,amount:Number(last.amount)||fallbackSalary(),real:true,end:isoAddDays(next.date,-1)};
+    let n=0;while(isoAddMonths(last.date,n+1)<=iso)n++;
+    const start=isoAddMonths(last.date,n);
+    return {start,amount:Number(last.amount)||fallbackSalary(),real:n===0,end:isoAddDays(isoAddMonths(last.date,n+1),-1)};
+  }
+  function periodKey(iso){const ps=periodStartFor(iso);return ps?budgetMonthOf(ps.start):iso.slice(0,7);}
+  function periodInfo(key){
+    const pd=getPaydays();
+    const real=[...pd].reverse().find(p=>budgetMonthOf(p.date)===key);
+    if(real){const ps=periodStartFor(real.date);return {key,start:real.date,end:ps.end,amount:Number(real.amount)||fallbackSalary(),real:true};}
+    if(pd.length){
+      const last=pd[pd.length-1];
+      for(let n=1;n<=36;n++){const st=isoAddMonths(last.date,n);if(budgetMonthOf(st)===key)return {key,start:st,end:isoAddDays(isoAddMonths(last.date,n+1),-1),amount:Number(last.amount)||fallbackSalary(),real:false,estimated:true};if(budgetMonthOf(st)>key)break;}
+    }
+    const [y,m]=key.split("-").map(Number);
+    const start=`${key}-01`;let end=isoOf(new Date(y,m,0));
+    const first=pd.find(p=>p.date>=start&&p.date<=end);
+    if(first) end=isoAddDays(first.date,-1);
+    return {key,start,end,amount:fallbackSalary(),real:false,calendar:true};
+  }
+  const shortDate=iso=>{const[y,m,d]=iso.split("-");return `${d}/${m}`;};
   const DEFAULT_WB={"Argent de poche":80};
   const DEFAULT_MB={"Dettes":150,"Compte commun":120,"Courses":150,"Transport":300,"Abonnements & salle":95,"Santé":80,"Chats":65,"Beauté / hygiène":155,"Argent de poche":345,"Imprévus":55};
   const SAV_DEFAULT_KEY="flw-saving-default", SAV_OBJ_KEY="flw-saving-obj";
@@ -1456,7 +1508,8 @@
       }
     }catch(e){}
 
-    const monthlyLimit=()=>{const s=Number(localStorage.getItem("flw-salaire")||0),c=Number(localStorage.getItem("flw-charges-fixes")||0);return s>0?Math.max(0,s-c):DEFAULT_SALAIRE-DEFAULT_CHARGES;};
+    const chargesFixes=()=>{const v=localStorage.getItem("flw-charges-fixes");return v===null?DEFAULT_CHARGES:Number(v)||0;};
+    const monthlyLimit=k=>Math.max(0,periodInfo(k||periodKey(localISO())).amount-chargesFixes());
 
     const savDefault=()=>{const v=Number(localStorage.getItem(SAV_DEFAULT_KEY));return isNaN(v)||localStorage.getItem(SAV_DEFAULT_KEY)===null?300:v;};
     const savObjs=()=>{try{return JSON.parse(localStorage.getItem(SAV_OBJ_KEY)||"{}");}catch(e){return {};}};
@@ -1495,33 +1548,45 @@
 
     const fmt=v=>new Intl.NumberFormat("fr-BE",{style:"currency",currency:"EUR"}).format(v||0);
     const fd=v=>new Date(v+"T12:00:00").toLocaleDateString("fr-BE");
-    const mkey=d=>{const x=new Date(d.length===10?d+"T12:00:00":d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}`;};
+    const mkey=d=>periodKey(String(d).slice(0,10));
     const mlbl=k=>{const[y,m]=k.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("fr-BE",{month:"long",year:"numeric"});};
     const monthCats=()=>["Épargne",...Object.keys(budgetMB).filter(c=>c!==POCKET&&Number(budgetMB[c])>0)];
-    const getCats=()=>[...new Set([POCKET,...monthCats(),...budgetTx.map(t=>t.categorie)])].filter(c=>!POCKET_CATS.includes(c));
+    const getCats=()=>[...new Set([...pocketCats(),POCKET,...monthCats(),...budgetTx.map(t=>t.categorie)])];
 
     const p2=n=>String(n).padStart(2,"0");
     const mondayOf=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;};
     const weekLabel=m=>{const e=new Date(m);e.setDate(m.getDate()+6);return `Sem. du ${p2(m.getDate())}/${p2(m.getMonth()+1)} au ${p2(e.getDate())}/${p2(e.getMonth()+1)}/${String(e.getFullYear()).slice(2)}`;};
+    const weekMon={};
     function genWeeks(){
       const l=[];
       const end=mondayOf(new Date());end.setDate(end.getDate()+56);
-      for(let m=new Date(2025,11,29);m<=end;m.setDate(m.getDate()+7)) l.push(weekLabel(new Date(m)));
+      for(let m=new Date(2025,11,29);m<=end;m.setDate(m.getDate()+7)){const lb=weekLabel(new Date(m));weekMon[lb]=isoOf(m);l.push(lb);}
       return l.reverse();
     }
+    const monISO=ds=>isoOf(mondayOf(new Date(String(ds).slice(0,10)+"T12:00:00")));
+    try{if(!localStorage.getItem(PSTART_KEY)) localStorage.setItem(PSTART_KEY,monISO(localISO()));}catch(e){}
+    const pocketStart=()=>localStorage.getItem(PSTART_KEY)||monISO(localISO());
     budgetWeeks=genWeeks();
     function wlbl(ds){const d=ds?new Date(ds+"T12:00:00"):new Date();return weekLabel(mondayOf(d));}
     const curW=()=>wlbl(localISO());
-    const curM=()=>{const n=new Date();return `${n.getFullYear()}-${p2(n.getMonth()+1)}`;};
+    const curM=()=>periodKey(localISO());
 
     function computeWeek(sel){
       sel=sel||curW();
-      const budget=Number(budgetWB[POCKET]||0);
-      const wtx=budgetTx.filter(t=>wlbl(t.date)===sel&&isPocket(t.categorie));
+      const mon=weekMon[sel]||monISO(localISO());
+      const base=Number(budgetWB[POCKET]||0);
+      const byMon={};
+      budgetTx.forEach(t=>{if(!isPocket(t.categorie))return;const m=monISO(t.date);byMon[m]=(byMon[m]||0)+Number(t.montant);});
+      let carry=0;const ps=pocketStart();
+      for(let m=ps;m<mon;m=isoAddDays(m,7)) carry+=base-(byMon[m]||0);
+      if(mon<ps) carry=0;
+      carry=Math.round(carry*100)/100;
+      const wtx=budgetTx.filter(t=>monISO(t.date)===mon&&isPocket(t.categorie));
       const names=[...new Set(wtx.map(t=>t.categorie))];
       const cats=names.map(c=>{const tx=wtx.filter(t=>t.categorie===c);return {c,spent:tx.reduce((s,t)=>s+Number(t.montant),0),tx};}).sort((a,b)=>b.spent-a.spent);
       const spent=wtx.reduce((s,t)=>s+Number(t.montant),0);
-      return {sel,budget,spent,left:budget-spent,cats,tx:wtx};
+      const budget=base+carry;
+      return {sel,base,carry,budget,spent,left:budget-spent,cats,tx:wtx};
     }
 
     function parseCSV(text){const lines=text.replace(/^\uFEFF/,"").split("\n").map(l=>l.trim()).filter(Boolean),rows=[];for(let i=1;i<lines.length;i++){const cols=[];let cur="",iq=false;for(const c of lines[i]){if(c==='"'){iq=!iq;continue;}if(c===";"&&!iq){cols.push(cur);cur="";continue;}cur+=c;}cols.push(cur);if(cols.length<4)continue;const m=parseFloat(cols[3].replace(",","."));if(!cols[0]||isNaN(m))continue;rows.push({date:cols[0].trim(),semaine:cols[1].trim(),categorie:cols[2].trim(),montant:m,memo:cols[4]?cols[4].trim():""});}return rows;}
@@ -1543,7 +1608,7 @@
 
     function popCats(){const cur=cI.value;cI.innerHTML=`<option value="">Choisir</option>`+getCats().map(c=>`<option value="${c}">${c}</option>`).join("");if(cur)cI.value=cur;}
     function rendBudgInputs(){wBS.innerHTML=Object.entries(budgetWB).map(([c,v])=>`<div class="setting-row"><label>${c}</label><input type="number" step="0.01" data-type="weekly" data-category="${c}" value="${v}"/></div>`).join("");mBS.innerHTML=Object.entries(budgetMB).map(([c,v])=>`<div class="setting-row"><label>${c}</label><input type="number" step="0.01" data-type="monthly" data-category="${c}" value="${v}"/></div>`).join("");document.querySelectorAll('[data-type="weekly"],[data-type="monthly"]').forEach(i=>i.addEventListener("input",updTotals));updTotals();}
-    const openS=()=>{rendBudgInputs();sBack.classList.add("open");};
+    const openS=()=>{rendBudgInputs();const pc=document.getElementById("pocket-cats-input");if(pc)pc.value=pocketCats().join(", ");sBack.classList.add("open");};
     const closeS=()=>{sBack.classList.remove("open");};
 
     function expCSV(rows,fn){const h=["Date","Semaine","Categorie","Montant","Memo"],cr=[h.join(";")].concat(rows.map(r=>[r.date,r.semaine,`"${String(r.categorie||"").replaceAll('"','""')}"`,String(r.montant).replace(".",","),`"${String(r.memo||"").replaceAll('"','""')}"`].join(";")));const b=new Blob(["\uFEFF"+cr.join("\n")],{type:"text/csv;charset=utf-8;"});const u=URL.createObjectURL(b);const l=document.createElement("a");l.href=u;l.download=fn;document.body.appendChild(l);l.click();document.body.removeChild(l);URL.revokeObjectURL(u);}
@@ -1609,17 +1674,24 @@
     function rendWeek(){
       const w=computeWeek(wS.value||curW());
       document.getElementById("weekly-budget").textContent=fmt(w.budget);
+      const wc=document.getElementById("weekly-carry");
+      if(wc) wc.textContent=w.carry===0?`${fmt(w.base)}, rien à reporter`:(w.carry>0?`${fmt(w.base)} + ${fmt(w.carry)} gardés des semaines d'avant`:`${fmt(w.base)} − ${fmt(-w.carry)} dépassés avant`);
       document.getElementById("weekly-spent").textContent=fmt(w.spent);
       const le=document.getElementById("weekly-left");le.textContent=fmt(w.left);le.className="kpi-value "+(w.left>=0?"amount-positive":"amount-negative");
       const wl=[...w.tx].sort((a,b)=>new Date(b.date+"T12:00:00")-new Date(a.date+"T12:00:00"));
-      document.getElementById("weekly-detail").innerHTML=wl.length?txLines(wl.map(t=>({...t,memo:t.memo||(t.categorie!==POCKET?t.categorie:"")}))):`<div class="empty">Rien dépensé cette semaine, tes ${fmt(w.budget)} sont intacts.</div>`;
+      const tot=w.cats.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">${w.cats.map(x=>`<span class="pill">${x.c===POCKET?"Autre":x.c} · ${fmt(x.spent)}</span>`).join("")}</div>`:"";
+      document.getElementById("weekly-detail").innerHTML=wl.length?tot+txLines(wl.map(t=>({...t,memo:[t.categorie===POCKET?"":t.categorie,t.memo].filter(Boolean).join(" · ")}))):`<div class="empty">Rien dépensé cette semaine, tes ${fmt(w.budget)} sont intacts.</div>`;
     }
 
     function rendMonth(){
       const sel=mS.value||curM();
       const tm=budgetTx.filter(t=>mkey(t.date)===sel);
       const total=tm.reduce((s,t)=>s+Number(t.montant),0);
-      const budgetDispo=monthlyLimit();
+      const budgetDispo=monthlyLimit(sel);
+      const pi=periodInfo(sel);
+      const pe=document.getElementById("month-period");
+      if(pe) pe.textContent=`Du ${shortDate(pi.start)} au ${shortDate(pi.end)}${pi.real?` · paie de ${fmt(pi.amount)}`:(pi.estimated?` · paie estimée à ${fmt(pi.amount)}, encode-la quand elle tombe`:(getPaydays().length?` · avant ta première paie encodée`:` · mois calendrier, encode ta paie pour démarrer de paie en paie`))}`;
+      renderPayList();
       const reste=budgetDispo-total;
       const pct=budgetDispo>0?Math.min(100,(total/budgetDispo)*100):0;
       document.getElementById("month-budget-total").textContent=fmt(budgetDispo);
@@ -1698,6 +1770,22 @@
     window.applySavDefaultAll=()=>{const d=savDefault();const o=savObjs();const cm=curM();for(let i=0;i<12;i++)o[addMonths(savStart||cm,i)]=d;try{localStorage.setItem(SAV_OBJ_KEY,JSON.stringify(o));}catch(e){}rendSavings();rendMonth();updateHubStats();};
     window.setSavStart=k=>{savStart=k===curM()?null:k;rendSavings();};
 
+    function renderPayList(){
+      const el=document.getElementById("pay-list");if(!el)return;
+      const pd=getPaydays().reverse();
+      el.innerHTML=pd.length?pd.slice(0,6).map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);"><div><div style="font-size:0.86rem;font-weight:700;color:var(--text);">Paie du ${fd(p.date)}</div><div style="font-size:0.76rem;color:var(--muted);">budget de ${mlbl(budgetMonthOf(p.date))}</div></div><div style="display:flex;align-items:center;gap:8px;"><span style="font-weight:800;color:var(--success);">${fmt(p.amount)}</span><button type="button" class="secondary" style="width:auto;padding:4px 9px;font-size:0.8rem;" onclick="delPayday('${p.date}')">✕</button></div></div>`).join(""):`<div class="meta" style="padding:6px 0;">Pas encore de paie encodée. Ton budget suit le mois calendrier en attendant.</div>`;
+    }
+    window.addPayday=(date,amount)=>{
+      const l=getPaydays().filter(p=>p.date!==date);
+      l.push({date,amount:Number(amount)||0});savePaydays(l);
+      fillMonthSelect(periodKey(localISO()));renderAll();updateHubStats();if(typeof renderCalendar==="function")renderCalendar();
+    };
+    window.delPayday=date=>{
+      if(!confirm("Supprimer cette paie ?"))return;
+      savePaydays(getPaydays().filter(p=>p.date!==date));
+      fillMonthSelect(periodKey(localISO()));renderAll();updateHubStats();
+    };
+
     function renderAll(){popCats();rendSaisie();rendWeek();rendMonth();rendSavings();}
 
     function switchBudgetScreen(n){
@@ -1718,7 +1806,8 @@
     document.getElementById("open-settings").addEventListener("click",openS);
     document.getElementById("close-settings").addEventListener("click",closeS);
     sBack.addEventListener("click",e=>{if(e.target===sBack)closeS();});
-    document.getElementById("save-settings").addEventListener("click",()=>{document.querySelectorAll('[data-type="weekly"]').forEach(i=>{budgetWB[i.dataset.category]=Number(i.value)||0;});document.querySelectorAll('[data-type="monthly"]').forEach(i=>{budgetMB[i.dataset.category]=Number(i.value)||0;});saveBudg();rendBudgInputs();renderAll();updateHubStats();closeS();});
+    document.getElementById("reset-pocket-week").addEventListener("click",()=>{if(!confirm("Le report repart de zéro à partir de cette semaine. OK ?"))return;try{localStorage.setItem(PSTART_KEY,monISO(localISO()));}catch(e){}renderAll();updateHubStats();});
+    document.getElementById("save-settings").addEventListener("click",()=>{const pc=document.getElementById("pocket-cats-input");if(pc){const l=[...new Set(pc.value.split(/[,\n]/).map(x=>x.trim()).filter(Boolean))];try{if(l.length)localStorage.setItem(PCATS_KEY,JSON.stringify(l));else localStorage.removeItem(PCATS_KEY);}catch(e){}}document.querySelectorAll('[data-type="weekly"]').forEach(i=>{budgetWB[i.dataset.category]=Number(i.value)||0;});document.querySelectorAll('[data-type="monthly"]').forEach(i=>{budgetMB[i.dataset.category]=Number(i.value)||0;});saveBudg();rendBudgInputs();renderAll();updateHubStats();closeS();});
     document.getElementById("reset-budgets").addEventListener("click",()=>{budgetWB={...dWB};budgetMB={...dMB};saveBudg();rendBudgInputs();renderAll();updateHubStats();});
     document.getElementById("import-btn").addEventListener("click",()=>impCSV(false));
     document.getElementById("import-replace-btn").addEventListener("click",()=>{if(confirm("Ça va tout remplacer. Tu confirmes ?"))impCSV(true);});
@@ -1730,9 +1819,14 @@
     const popSel=(s,v)=>{s.innerHTML=v.map(x=>`<option value="${x}">${x}</option>`).join("");};
     popSel(wI,budgetWeeks);popSel(wS,budgetWeeks);
     wS.value=curW();wI.value=curW();
-    const months=[];for(let y=2026;y<=2027;y++)for(let m=1;m<=12;m++)months.push(`${y}-${p2(m)}`);
-    mS.innerHTML=months.map(k=>`<option value="${k}">${mlbl(k)}</option>`).join("");
-    const cm=curM();mS.value=months.includes(cm)?cm:months[0];
+    function fillMonthSelect(keep){
+      const cur=keep||mS.value||curM();
+      const months=[];for(let y=2026;y<=2027;y++)for(let m=1;m<=12;m++)months.push(`${y}-${p2(m)}`);
+      mS.innerHTML=months.map(k=>{const pi=periodInfo(k);return `<option value="${k}">${mlbl(k)}${pi.real?` · paie du ${shortDate(pi.start)}`:""}</option>`;}).join("");
+      mS.value=months.includes(cur)?cur:months[0];
+    }
+    fillMonthSelect(curM());
+    window._fillMonthSelect=fillMonthSelect;
     dI.value=localISO();
     rendBudgInputs();renderAll();
 
@@ -1742,7 +1836,7 @@
     window._renderAllBudget=renderAll;
     window._computeWeek=computeWeek;
     window._getCats=getCats;
-    window._weeklyCats=()=>[POCKET];
+    window._weeklyCats=()=>[...pocketCats(),POCKET];
     window._monthCats=monthCats;
     window._addTx=tx=>{budgetTx.push({date:tx.date,semaine:wlbl(tx.date),categorie:tx.categorie,montant:Number(tx.montant),memo:tx.memo||""});saveD();renderAll();updateHubStats();};
   }
@@ -1763,9 +1857,10 @@
       amt.textContent=w.left<0?`-${fmt(-w.left)}`:fmt(w.left);
       amt.classList.toggle("over",w.left<0);
       const daysTxt=dleft===1?"dernier jour avant lundi":`${dleft} jours avant lundi`;
+      const carryTxt=w.carry>0?` (dont ${short(w.carry)} gardés)`:(w.carry<0?` (${short(-w.carry)} de dépassement repris)`:"");
       document.getElementById("wh-sub").textContent=w.left>=0
-        ? `restants sur ${short(w.budget)} · ${daysTxt} · environ ${fmt(w.left/dleft)} par jour`
-        : `dépassé de ${fmt(-w.left)} · on prend sur la marge et on repart lundi`;
+        ? `restants sur ${short(w.budget)}${carryTxt} · ${daysTxt} · environ ${fmt(w.left/dleft)} par jour`
+        : `dépassé de ${fmt(-w.left)} · ce sera repris sur la semaine prochaine`;
       const fill=document.getElementById("wh-fill");
       fill.style.width=(w.budget>0?Math.min(100,w.spent/w.budget*100):0)+"%";
       fill.classList.toggle("over",w.left<0);
@@ -1774,17 +1869,16 @@
       wc.innerHTML=w.cats.slice(0,6).map(x=>`<div class="week-cat"><div class="week-cat-name">${x.c}</div><div class="week-cat-val">${fmt(x.spent)}</div></div>`).join("");
     }
 
-    const mkeyLocal=d=>{const x=new Date(d.length===10?d+"T12:00:00":d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}`;};
-    const txMonth=budgetTx.filter(t=>mkeyLocal(t.date)===cm);
-    const salaire=Number(localStorage.getItem("flw-salaire")||0);
-    const charges=Number(localStorage.getItem("flw-charges-fixes")||0);
+    const pk=periodKey(localISO()), pinfo=periodInfo(pk);
+    const txMonth=budgetTx.filter(t=>periodKey(String(t.date).slice(0,10))===pk);
+    const chv=localStorage.getItem("flw-charges-fixes");const charges=chv===null?DEFAULT_CHARGES:Number(chv)||0;
     const total=txMonth.reduce((s,t)=>s+Number(t.montant),0);
-    const bt=salaire>0?(salaire-charges):Object.values(budgetMB).reduce((s,v)=>s+Number(v),0);
+    const bt=Math.max(0,pinfo.amount-charges);
     const reste=bt-total, pct=bt>0?Math.min(100,(total/bt)*100):0;
     const spentEl=document.getElementById("hub-spent");
     if(spentEl) spentEl.textContent=fmt(total);
     const spentSub=document.getElementById("hub-spent-sub");
-    if(spentSub) spentSub.textContent=`sur ${fmt(bt)} budgétés (hors charges fixes)`;
+    if(spentSub) spentSub.textContent=`sur ${fmt(bt)} budgétés (hors charges fixes) · ${pinfo.real?`depuis ta paie du ${shortDate(pinfo.start)}`:`du ${shortDate(pinfo.start)} au ${shortDate(pinfo.end)}`}`;
     const saving=txMonth.filter(t=>t.categorie==="Épargne").reduce((s,t)=>s+Number(t.montant),0);
     const savEl=document.getElementById("hub-saving");
     if(savEl) savEl.textContent=fmt(saving);
@@ -1802,12 +1896,12 @@
   // ═══ AJOUT RAPIDE ═══
   let qaCat=null;
   const escAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
-  function chipHTML(c){return `<button type="button" class="qa-chip${c===qaCat?" sel":""}" data-cat="${escAttr(c)}" onclick="pickQaCat(this)">${escAttr(c)}</button>`;}
+  function chipHTML(c,label){return `<button type="button" class="qa-chip${c===qaCat?" sel":""}" data-cat="${escAttr(c)}" onclick="pickQaCat(this)">${escAttr(label||c)}</button>`;}
   function renderQaChips(){
     const wk=window._weeklyCats?window._weeklyCats():[];
     const mo=window._monthCats?window._monthCats():[];
-    document.getElementById("qa-chips-week").innerHTML=wk.map(chipHTML).join("");
-    document.getElementById("qa-chips-month").innerHTML=mo.map(chipHTML).join("");
+    document.getElementById("qa-chips-week").innerHTML=wk.map(c=>chipHTML(c,c===POCKET?"Autre":c)).join("");
+    document.getElementById("qa-chips-month").innerHTML=mo.map(c=>chipHTML(c)).join("");
   }
   function pickQaCat(el){qaCat=el.dataset.cat;document.querySelectorAll(".qa-chip").forEach(b=>b.classList.toggle("sel",b.dataset.cat===qaCat));document.getElementById("qa-err").classList.remove("show");}
   function openQuickAdd(pre){
@@ -1822,11 +1916,34 @@
     setTimeout(()=>{const a=document.getElementById("qa-amount");if(!a.value)a.focus();},250);
   }
   function closeQuickAdd(){document.getElementById("qa-backdrop").classList.remove("open");}
+  function openPayModal(){
+    const pd=getPaydays();const last=pd.length?pd[pd.length-1].amount:fallbackSalary();
+    document.getElementById("pay-amount").value=String(last).replace(".",",");
+    document.getElementById("pay-date").value=localISO();
+    document.getElementById("pay-err").classList.remove("show");
+    document.getElementById("pay-backdrop").classList.add("open");
+  }
+  function closePayModal(){document.getElementById("pay-backdrop").classList.remove("open");}
+  function savePayModal(){
+    const a=parseFloat(String(document.getElementById("pay-amount").value).replace(/\s/g,"").replace(",",".").replace(/[^\d.]/g,""));
+    const d=document.getElementById("pay-date").value;
+    const err=document.getElementById("pay-err");
+    if(!(a>0)){err.textContent="Indique le montant !";err.classList.add("show");return;}
+    if(!d){err.textContent="Indique la date !";err.classList.add("show");return;}
+    window.addPayday(d,a);closePayModal();
+    showToast(`Paie encodée · nouveau budget à partir du ${shortDate(d)} 💰`);
+  }
   function saveQuickAdd(){
     const err=document.getElementById("qa-err");
     const a=parseFloat(String(document.getElementById("qa-amount").value).replace(",",".").replace(/[^\d.\-]/g,""));
     if(!(a>0)){err.textContent="Indique un montant !";err.classList.add("show");return;}
     if(!qaCat){err.textContent="Choisis une catégorie !";err.classList.add("show");return;}
+    if(qaCat==="__PAIE__"){
+      const d=document.getElementById("qa-date").value||localISO();
+      window.addPayday(d,a);closeQuickAdd();
+      showToast(`Paie de ${window._budgetFmt(a)} encodée · ton budget de ${new Date(budgetMonthOf(d)+"-01T12:00:00").toLocaleDateString("fr-BE",{month:"long"})} démarre le ${shortDate(d)} 💰`);
+      return;
+    }
     window._addTx({date:document.getElementById("qa-date").value||localISO(),categorie:qaCat,montant:a,memo:document.getElementById("qa-memo").value.trim()});
     closeQuickAdd();
     showAddedToast(a,qaCat);
@@ -1835,7 +1952,7 @@
   function showAddedToast(a,cat){
     const fmt=window._budgetFmt;
     let msg=`${fmt(a)} ajouté en ${cat}`;
-    if(window._weeklyCats().includes(cat)){const w=window._computeWeek();msg+=w.left>=0?` · il te reste ${fmt(w.left)} cette semaine`:` · semaine dépassée de ${fmt(-w.left)}`;}
+    if(isPocket(cat)){const w=window._computeWeek();msg+=w.left>=0?` · il te reste ${fmt(w.left)} cette semaine`:` · semaine dépassée de ${fmt(-w.left)}`;}
     showToast(msg);
   }
 
@@ -1845,8 +1962,12 @@
     const cats=window._getCats?window._getCats():[];
     const n=normTxt(q);
     if(!n) return null;
-    if(["poche","argent","plaisir","sortie","sorties","uber","resto","shopping","taff","potes","cadeau"].some(x=>n.includes(x))||POCKET_CATS.some(c=>normTxt(c).includes(n))) return POCKET;
-    return cats.find(c=>normTxt(c)===n)||cats.find(c=>normTxt(c).includes(n))||cats.find(c=>n.includes(normTxt(c)))||null;
+    const hit=cats.find(c=>normTxt(c)===n)||cats.find(c=>normTxt(c).includes(n))||cats.find(c=>n.includes(normTxt(c)));
+    if(hit) return hit;
+    const pc=pocketCats();const kw={"soir":"Soirée","sortie":"Soirée","apero":"Soirée","clope":"Clopes","cigarette":"Clopes","uber":"Uber Eats / resto","resto":"Uber Eats / resto","taff":"Bouffe au taff","boulot":"Bouffe au taff","cadeau":"Potes / cadeaux","potes":"Potes / cadeaux","shop":"Shopping","plaisir":"Plaisir"};
+    for(const [k,v] of Object.entries(kw)) if(n.includes(k)) return pc.includes(v)?v:POCKET;
+    if(["poche","argent","autre"].some(x=>n.includes(x))) return POCKET;
+    return null;
   }
   function handleUrlParams(){
     let sp;
@@ -2534,7 +2655,8 @@
     const fmt=window._budgetFmt;
     const now=new Date(), cm=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
     const mkL=d=>{const x=new Date(d.length===10?d+"T12:00:00":d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}`;};
-    const txMonth=budgetTx.filter(t=>mkL(t.date)===cm);
+    const pkC=periodKey(localISO());
+    const txMonth=budgetTx.filter(t=>periodKey(String(t.date).slice(0,10))===pkC);
 
     function drawDonut(canvasId,legendId,data,fmtVal){
       const canvas=document.getElementById(canvasId);
