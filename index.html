@@ -674,6 +674,7 @@
           <div class="hub-budget-foot-value" id="hub-saving">—</div>
         </div>
       </div>
+      <div id="hub-pay-line" onclick="event.stopPropagation()" style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);"></div>
     </div>
 
     <div class="hub-section-title">Aujourd'hui</div>
@@ -1800,7 +1801,7 @@
     function renderPayList(){
       const el=document.getElementById("pay-list");if(!el)return;
       const pd=getAllPay().reverse();
-      el.innerHTML=pd.length?pd.slice(0,8).map(p=>{const ex=p.type==="extra";const t=ex?`🎁 ${p.label||"Extra"} du ${fd(p.date)}`:`💰 Paie du ${fd(p.date)}`;const sub=ex?`ajouté au budget ${deM(mlbl(periodKey(p.date)))}`:`ouvre le budget ${deM(mlbl(budgetMonthOf(p.date)))}`;return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);"><div><div style="font-size:0.86rem;font-weight:700;color:var(--text);">${t}</div><div style="font-size:0.76rem;color:var(--muted);">${sub}</div></div><div style="display:flex;align-items:center;gap:8px;"><span style="font-weight:800;color:var(--success);">${fmt(p.amount)}</span><button type="button" class="secondary" style="width:auto;padding:4px 9px;font-size:0.8rem;" onclick="delPayday('${p.id}')">✕</button></div></div>`;}).join(""):`<div class="meta" style="padding:6px 0;">Pas encore de paie encodée. Ton budget suit le mois calendrier en attendant.</div>`;
+      el.innerHTML=pd.length?pd.slice(0,8).map(p=>{const ex=p.type==="extra";const t=ex?`🎁 ${p.label||"Extra"} du ${fd(p.date)}`:`💰 Paie du ${fd(p.date)}`;const sub=ex?`ajouté au budget ${deM(mlbl(periodKey(p.date)))}`:`ouvre le budget ${deM(mlbl(budgetMonthOf(p.date)))}`;return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);"><div><div style="font-size:0.86rem;font-weight:700;color:var(--text);">${t}</div><div style="font-size:0.76rem;color:var(--muted);">${sub}</div></div><div style="display:flex;align-items:center;gap:8px;"><span style="font-weight:800;color:var(--success);">${fmt(p.amount)}</span><button type="button" class="secondary" style="width:auto;padding:4px 9px;font-size:0.8rem;" onclick="editPayday('${p.id}')">✎</button><button type="button" class="secondary" style="width:auto;padding:4px 9px;font-size:0.8rem;" onclick="delPayday('${p.id}')">✕</button></div></div>`;}).join(""):`<div class="meta" style="padding:6px 0;">Pas encore de paie encodée. Ton budget suit le mois calendrier en attendant.</div>`;
     }
     window.addPayday=(date,amount,type,label)=>{
       type=type||"main";
@@ -1915,6 +1916,14 @@
     if(pctEl){pctEl.textContent=Math.round(pct)+"%";pctEl.classList.toggle("over",reste<0);}
     const bar=document.getElementById("hub-bar-fill");
     if(bar){bar.style.width=pct+"%";bar.classList.toggle("over",reste<0);}
+    const pl=document.getElementById("hub-pay-line");
+    if(pl){
+      const main=getPaydays().filter(x=>budgetMonthOf(x.date)===pk).pop();
+      const exs=pinfo.extraList||[];
+      const row=(ico,txt,amt,id)=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 0;"><span style="font-size:0.82rem;color:var(--text-2);font-weight:600;">${ico} ${txt}</span><span style="display:flex;align-items:center;gap:8px;"><b style="font-size:0.88rem;color:var(--success);">${fmt(amt)}</b><button type="button" class="secondary" style="width:auto;padding:5px 10px;font-size:0.76rem;" onclick="editPayday('${id}')">✎ Modifier</button></span></div>`;
+      pl.innerHTML=(main?row("💰",`Paie du ${shortDate(main.date)}`,main.amount,main.id):`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><span style="font-size:0.82rem;color:var(--muted);font-weight:600;">${pinfo.estimated?`Paie estimée à ${fmt(pinfo.mainAmount)}`:"Pas de paie encodée pour ce budget"}</span><button type="button" style="width:auto;padding:6px 11px;font-size:0.78rem;" onclick="openPayModal('main')">💰 Encoder ma paie</button></div>`)
+        +exs.map(x=>row("🎁",`${x.label||"Extra"} du ${shortDate(x.date)}`,x.amount,x.id)).join("");
+    }
     const remEl=document.getElementById("hub-budget-remaining");
     if(remEl){
       remEl.textContent=reste<0?`-${fmt(Math.abs(reste))}`:fmt(reste);
@@ -1971,7 +1980,20 @@
     }
   }
   function pickRefundCat(el){refundCat=el.dataset.rc;document.querySelectorAll('#pay-refund-cats .qa-chip').forEach(b=>b.classList.toggle('sel',b.dataset.rc===refundCat));}
+  let payEditId=null;
+  function editPayday(id){
+    const p=getAllPay().find(x=>x.id===id);if(!p)return;
+    openPayModal(p.type,p.amount);
+    payEditId=id;
+    document.getElementById("pay-date").value=p.date;
+    document.getElementById("pay-label").value=p.label||"";
+    document.getElementById("pay-title").textContent="✎ Modifier la rentrée";
+    document.querySelector('#pay-backdrop .ltab[data-pt="refund"]').style.display="none";
+  }
   function openPayModal(type,amount){
+    payEditId=null;
+    document.getElementById("pay-title").textContent="💰 Une rentrée";
+    document.querySelector('#pay-backdrop .ltab[data-pt="refund"]').style.display="";
     const a=document.getElementById("pay-amount");
     a.dataset.keep=amount?"1":"";
     document.getElementById("pay-label").value="";
@@ -2001,10 +2023,18 @@
       if(isPocket(refundCat)){const w=window._computeWeek();msg+=` · il te reste ${fmt(w.left)} cette semaine`;}
       showToast(msg+" ↩️");return;
     }
-    if(payType==="extra"){
+    if(payType==="extra"&&!payEditId){
       const lb=document.getElementById("pay-label").value.trim()||"Extra";
       window.addPayday(d,a,"extra",lb);closePayModal();
       showToast(`${lb} de ${fmt(a)} ajouté à ton budget ${deM(new Date(periodKey(d)+"-01T12:00:00").toLocaleDateString("fr-BE",{month:"long"}))} 🎁`);return;
+    }
+    if(payEditId){
+      const l=getAllPay();const it=l.find(x=>x.id===payEditId);
+      if(it){it.date=d;it.amount=a;it.type=payType;it.label=payType==="extra"?(document.getElementById("pay-label").value.trim()||"Extra"):"";}
+      savePaydays(l);payEditId=null;closePayModal();
+      if(window._fillMonthSelect) window._fillMonthSelect(periodKey(localISO()));
+      if(window._renderAllBudget) window._renderAllBudget();updateHubStats();
+      showToast(`Rentrée modifiée : ${fmt(a)} le ${shortDate(d)} ✎`);return;
     }
     window.addPayday(d,a,"main");closePayModal();
     showToast(`Paie encodée · nouveau budget à partir du ${shortDate(d)} 💰`);
